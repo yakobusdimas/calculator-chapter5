@@ -35,7 +35,7 @@ pipeline {
         stage("Acceptance test") {
             steps {
                 sleep 60
-                sh "./gradlew acceptanceTest -Dcalculator.url=http://localhost:8765"
+                sh "./gradlew acceptanceTest -Dcalculator.url=http://host.docker.internal:8765"
             }
         }
     }
