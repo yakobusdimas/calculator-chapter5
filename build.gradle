@@ -6,6 +6,7 @@ plugins {
 
 group = 'com.leszko'
 version = '0.0.1-SNAPSHOT'
+archivesBaseName = 'calculator'
 sourceCompatibility = '11'
 
 repositories {
