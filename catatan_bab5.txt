@@ -1,0 +1,42 @@
+=== Catatan Pembuatan Project Calculator - Bab 5: Automated Acceptance Testing ===
+
+Langkah 1: Setup Base Project (Bab 4)
+-------------------------------------
+- Dibuat file build.gradle yang mengonfigurasi dependencies Spring Boot (starter-web, starter-test) dan plugin java/spring-boot.
+- Dibuat struktur package `com.leszko.calculator` untuk aplikasi Spring Boot.
+- Dibuat `Calculator.java` yang memuat logika penambahan `sum(int a, int b)`.
+- Dibuat `CalculatorController.java` sebagai REST Controller yang mengekspos endpoint `/sum`.
+- Dibuat `CalculatorApplication.java` sebagai entry point untuk menjalankan aplikasi Spring Boot.
+
+Langkah 2: Menambahkan Dependensi Cucumber (Bab 5)
+--------------------------------------------------
+- Di dalam file `build.gradle`, ditambahkan dependensi untuk Cucumber:
+    testImplementation("io.cucumber:cucumber-java:7.2.0")
+    testImplementation("io.cucumber:cucumber-junit:7.2.0")
+- Dibuat task khusus `acceptanceTest` pada `build.gradle` untuk menjalankan test pada folder `**/acceptance/**`.
+
+Langkah 3: Membuat Dockerfile (Bab 5)
+-------------------------------------
+- Dibuat file `Dockerfile` pada root direktori.
+- Menggunakan `openjdk:11-jre` sebagai base image.
+- Menggunakan perintah COPY untuk memindahkan artifact `.jar` hasil build Gradle ke dalam image Docker, dan menambahkan ENTRYPOINT untuk menjalankannya.
+
+Langkah 4: Menulis Acceptance Criteria (Bab 5)
+----------------------------------------------
+- Dibuat file Gherkin: `src/test/resources/feature/calculator.feature`.
+- Menggunakan bahasa BDD untuk mendeskripsikan "Feature: Calculator" yang memiliki Skenario: "Sum two numbers".
+
+Langkah 5: Membuat Step Definitions & Test Runner (Bab 5)
+---------------------------------------------------------
+- Dibuat file `src/test/java/acceptance/StepDefinitions.java` untuk menerjemahkan skenario Gherkin ke dalam kode Java.
+- Pada file tersebut, parameter di-binding dari "Given", URL service endpoint dieksekusi dengan RestTemplate pada "When", dan divalidasi dengan assertEquals pada "Then".
+- Dibuat `src/test/java/acceptance/AcceptanceTest.java` dengan anotasi `@RunWith(Cucumber.class)` sebagai runner untuk test Cucumber.
+
+Langkah 6: Memperbarui Jenkinsfile (Bab 5)
+------------------------------------------
+- Dibuat `Jenkinsfile` dengan susunan stage: "Compile", "Unit test", "Package", "Docker build", "Docker push", "Deploy to staging", "Acceptance test".
+- Tahap Acceptance Test menjalankan task Gradle `./gradlew acceptanceTest` dengan menyisipkan parameter host `-Dcalculator.url=http://localhost:8765`.
+- Tahap Post Action "always" ditambahkan dengan memanggil `docker stop calculator` untuk membersihkan environment/container staging setelah testing selesai dijalankan.
+
+==============================================================================
+Project telah diatur secara lengkap dan merefleksikan hasil akhir dari Bab 5.
