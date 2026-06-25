@@ -19,17 +19,17 @@ pipeline {
         }
         stage("Docker build") {
             steps {
-                sh "docker build -t leszko/calculator ."
+                sh "docker build -t ydima169/calculator ."
             }
         }
         stage("Docker push") {
             steps {
-                sh "docker push leszko/calculator"
+                sh "docker push ydima169/calculator"
             }
         }
         stage("Deploy to staging") {
             steps {
-                sh "docker run -d --rm -p 8765:8080 --name calculator leszko/calculator"
+                sh "docker run -d --rm -p 8765:8080 --name calculator ydima169/calculator"
             }
         }
         stage("Acceptance test") {
