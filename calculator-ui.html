@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Calculator — Spring Boot API</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #0f0f13;
+      font-family: 'Inter', sans-serif;
+      background-image:
+        radial-gradient(ellipse at 20% 50%, rgba(120, 80, 255, 0.15) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 20%, rgba(0, 200, 255, 0.1) 0%, transparent 50%);
+    }
+
+    .wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 12px;
+      color: rgba(255,255,255,0.5);
+    }
+
+    .badge span {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #22c55e;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .calculator {
+      background: rgba(255, 255, 255, 0.04);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 24px;
+      padding: 24px;
+      width: 320px;
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.03),
+        0 32px 80px rgba(0,0,0,0.6),
+        inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+
+    /* Display */
+    .display {
+      background: rgba(0,0,0,0.3);
+      border-radius: 16px;
+      padding: 20px 20px 16px;
+      margin-bottom: 20px;
+      border: 1px solid rgba(255,255,255,0.05);
+      min-height: 100px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      align-items: flex-end;
+    }
+
+    .display .expression {
+      font-size: 13px;
+      color: rgba(255,255,255,0.3);
+      min-height: 18px;
+      word-break: break-all;
+      text-align: right;
+    }
+
+    .display .result {
+      font-size: 42px;
+      font-weight: 300;
+      color: #ffffff;
+      letter-spacing: -1px;
+      word-break: break-all;
+      text-align: right;
+      transition: all 0.15s ease;
+    }
+
+    .display .result.loading {
+      color: rgba(255,255,255,0.3);
+      animation: blink 0.8s infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    .display .api-tag {
+      font-size: 10px;
+      color: rgba(120,80,255,0.7);
+      margin-top: 4px;
+      height: 14px;
+      font-weight: 500;
+    }
+
+    /* Buttons Grid */
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    button {
+      border: none;
+      border-radius: 14px;
+      height: 62px;
+      font-family: 'Inter', sans-serif;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: transform 0.08s ease, filter 0.1s ease, background 0.1s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    button:active {
+      transform: scale(0.93);
+    }
+
+    button::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,0);
+      transition: background 0.1s;
+      border-radius: inherit;
+    }
+
+    button:hover::after {
+      background: rgba(255,255,255,0.06);
+    }
+
+    /* Button types */
+    .btn-number {
+      background: rgba(255,255,255,0.07);
+      color: #ffffff;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .btn-op {
+      background: rgba(120, 80, 255, 0.18);
+      color: #a78bfa;
+      border: 1px solid rgba(120,80,255,0.2);
+      font-size: 20px;
+    }
+
+    .btn-op.active-op {
+      background: rgba(120, 80, 255, 0.35);
+      color: #fff;
+      border-color: rgba(120,80,255,0.5);
+    }
+
+    .btn-special {
+      background: rgba(255,255,255,0.05);
+      color: rgba(255,255,255,0.6);
+      border: 1px solid rgba(255,255,255,0.05);
+      font-size: 14px;
+    }
+
+    .btn-equal {
+      background: linear-gradient(135deg, #7c3aed, #4f46e5);
+      color: #ffffff;
+      border: none;
+      font-size: 22px;
+      box-shadow: 0 4px 20px rgba(124, 58, 237, 0.4);
+      grid-column: span 2;
+    }
+
+    .btn-equal:hover {
+      filter: brightness(1.15);
+    }
+
+    .btn-zero {
+      grid-column: span 2;
+    }
+
+    /* Error state */
+    .display.error .result {
+      color: #f87171;
+      font-size: 18px;
+    }
+
+    /* Info footer */
+    .info {
+      font-size: 11px;
+      color: rgba(255,255,255,0.2);
+      text-align: center;
+    }
+
+    .info span { color: rgba(120,80,255,0.6); }
+  </style>
+</head>
+<body>
+
+<div class="wrapper">
+  <div class="badge">
+    <span></span>
+    Connected to Spring Boot API · localhost:8090
+  </div>
+
+  <div class="calculator">
+    <div class="display" id="display">
+      <div class="expression" id="expression"></div>
+      <div class="result" id="result">0</div>
+      <div class="api-tag" id="apiTag"></div>
+    </div>
+
+    <div class="buttons">
+      <!-- Row 1 -->
+      <button class="btn-special" onclick="clearAll()">AC</button>
+      <button class="btn-special" onclick="toggleSign()">+/-</button>
+      <button class="btn-special" onclick="percentage()">%</button>
+      <button class="btn-op" id="op-/" onclick="setOp('/')">÷</button>
+
+      <!-- Row 2 -->
+      <button class="btn-number" onclick="input('7')">7</button>
+      <button class="btn-number" onclick="input('8')">8</button>
+      <button class="btn-number" onclick="input('9')">9</button>
+      <button class="btn-op" id="op-*" onclick="setOp('*')">×</button>
+
+      <!-- Row 3 -->
+      <button class="btn-number" onclick="input('4')">4</button>
+      <button class="btn-number" onclick="input('5')">5</button>
+      <button class="btn-number" onclick="input('6')">6</button>
+      <button class="btn-op" id="op--" onclick="setOp('-')">−</button>
+
+      <!-- Row 4 -->
+      <button class="btn-number" onclick="input('1')">1</button>
+      <button class="btn-number" onclick="input('2')">2</button>
+      <button class="btn-number" onclick="input('3')">3</button>
+      <button class="btn-op" id="op-+" onclick="setOp('+')">+</button>
+
+      <!-- Row 5 -->
+      <button class="btn-number btn-zero" onclick="input('0')">0</button>
+      <button class="btn-number" onclick="inputDot()">.</button>
+      <button class="btn-equal" onclick="calculate()">=</button>
+    </div>
+  </div>
+
+  <div class="info">
+    Operasi <span>penjumlahan (+)</span> diproses via Spring Boot REST API
+  </div>
+</div>
+
+<script>
+  const API_BASE = 'http://localhost:8090';
+
+  let current = '0';
+  let operand = null;
+  let operator = null;
+  let shouldReset = false;
+
+  const resultEl = document.getElementById('result');
+  const expressionEl = document.getElementById('expression');
+  const apiTagEl = document.getElementById('apiTag');
+  const displayEl = document.getElementById('display');
+
+  function updateDisplay(val) {
+    resultEl.textContent = val;
+  }
+
+  function input(digit) {
+    if (shouldReset) { current = ''; shouldReset = false; }
+    if (current === '0' && digit !== '.') current = '';
+    if (current.length >= 10) return;
+    current += digit;
+    updateDisplay(current);
+    displayEl.classList.remove('error');
+    apiTagEl.textContent = '';
+  }
+
+  function inputDot() {
+    if (shouldReset) { current = '0'; shouldReset = false; }
+    if (!current.includes('.')) {
+      current += '.';
+      updateDisplay(current);
+    }
+  }
+
+  function setOp(op) {
+    document.querySelectorAll('.btn-op').forEach(b => b.classList.remove('active-op'));
+    document.getElementById('op-' + op).classList.add('active-op');
+
+    if (operand !== null && !shouldReset) {
+      calculate(true);
+    } else {
+      operand = parseFloat(current);
+    }
+    operator = op;
+    shouldReset = true;
+    expressionEl.textContent = operand + ' ' + opSymbol(op);
+    apiTagEl.textContent = '';
+  }
+
+  function opSymbol(op) {
+    return { '+': '+', '-': '−', '*': '×', '/': '÷' }[op] || op;
+  }
+
+  async function calculate(chained = false) {
+    if (operator === null || operand === null) return;
+
+    const a = operand;
+    const b = parseFloat(current);
+
+    expressionEl.textContent = `${a} ${opSymbol(operator)} ${b} =`;
+    document.querySelectorAll('.btn-op').forEach(btn => btn.classList.remove('active-op'));
+
+    if (operator === '+') {
+      // Call Spring Boot API
+      resultEl.classList.add('loading');
+      resultEl.textContent = '...';
+      apiTagEl.textContent = '';
+      displayEl.classList.remove('error');
+
+      try {
+        const res = await fetch(`${API_BASE}/sum?a=${a}&b=${b}`);
+        if (!res.ok) throw new Error('API Error');
+        const data = await res.text();
+        const value = parseFloat(data);
+        current = String(value);
+        resultEl.classList.remove('loading');
+        updateDisplay(formatNum(value));
+        apiTagEl.textContent = '⚡ via Spring Boot API';
+      } catch (e) {
+        resultEl.classList.remove('loading');
+        displayEl.classList.add('error');
+        resultEl.textContent = 'API tidak terhubung';
+        apiTagEl.textContent = 'Cek: localhost:8090';
+        current = '0';
+      }
+    } else {
+      // Client-side for -, *, /
+      let result;
+      if (operator === '-') result = a - b;
+      else if (operator === '*') result = a * b;
+      else if (operator === '/') result = b !== 0 ? a / b : 'Error';
+
+      current = String(result);
+      updateDisplay(formatNum(result));
+      apiTagEl.textContent = '📱 Client-side';
+    }
+
+    if (!chained) {
+      operand = null;
+      operator = null;
+    } else {
+      operand = parseFloat(current);
+    }
+    shouldReset = true;
+  }
+
+  function formatNum(n) {
+    if (isNaN(n) || n === 'Error') return 'Error';
+    const s = parseFloat(n.toFixed(8));
+    return s.toString();
+  }
+
+  function clearAll() {
+    current = '0';
+    operand = null;
+    operator = null;
+    shouldReset = false;
+    updateDisplay('0');
+    expressionEl.textContent = '';
+    apiTagEl.textContent = '';
+    displayEl.classList.remove('error');
+    document.querySelectorAll('.btn-op').forEach(b => b.classList.remove('active-op'));
+  }
+
+  function toggleSign() {
+    current = String(parseFloat(current) * -1);
+    updateDisplay(current);
+  }
+
+  function percentage() {
+    current = String(parseFloat(current) / 100);
+    updateDisplay(current);
+  }
+
+  // Keyboard support
+  document.addEventListener('keydown', e => {
+    if (e.key >= '0' && e.key <= '9') input(e.key);
+    else if (e.key === '.') inputDot();
+    else if (e.key === '+') setOp('+');
+    else if (e.key === '-') setOp('-');
+    else if (e.key === '*') setOp('*');
+    else if (e.key === '/') { e.preventDefault(); setOp('/'); }
+    else if (e.key === 'Enter' || e.key === '=') calculate();
+    else if (e.key === 'Escape') clearAll();
+    else if (e.key === 'Backspace') {
+      if (current.length > 1) current = current.slice(0, -1);
+      else current = '0';
+      updateDisplay(current);
+    }
+  });
+</script>
+</body>
+</html>
